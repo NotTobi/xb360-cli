@@ -31,4 +31,10 @@ jobs:
           dotnet-version: 8.x
 
       - name: Publish binary
-        run: dotnet publish -c Release -r "${{ matrix.runtime }}" -o "./${{ matrix.runtime }}"
+        run: dotnet publish ./xb360.csproj -c Release -r ${{ matrix.runtime }} -o ./${{ matrix.runtime }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.runtime }}
+          path: ./${{ matrix.runtime }}
