@@ -31,4 +31,4 @@ jobs:
           dotnet-version: 8.x
 
       - name: Publish binary
-        run: dotnet publish -c Release-r "${{ matrix.runtime }}" -o "./${{ matrix.runtime }}"
+        run: dotnet publish -c Release -r "${{ matrix.runtime }}" -o "./${{ matrix.runtime }}"
