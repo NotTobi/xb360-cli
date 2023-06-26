@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# todo: calculate version automatically
+
 jobs:
   build:
     strategy:
@@ -39,5 +41,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.runtime }}
+          name: ${{ matrix.runtime }} # todo: include version number
           path: ./${{ matrix.runtime }}/${{ matrix.artifact }}
