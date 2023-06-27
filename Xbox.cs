@@ -95,7 +95,7 @@ public class Xbox : IAsyncDisposable
         }
     }
 
-    public async Task DisconnectAsync()
+    public async Task DisconnectAsync(bool sendBye = true)
     {
         if (_client is null)
         {
@@ -104,9 +104,10 @@ public class Xbox : IAsyncDisposable
 
         try
         {
-            await SendCommand("bye");
-
-            // await ReadSingleLineAsync();
+            if (sendBye)
+            {
+                await SendCommand("bye");
+            }
         }
         catch (Exception exc)
         {
@@ -654,7 +655,7 @@ public class Xbox : IAsyncDisposable
             return;
         }
 
-        Debug.WriteLine("Command: " + command);
+        Console.WriteLine("Command: " + command);
 
         var bytes = Encoding.ASCII.GetBytes(command + EOL);
 
@@ -693,7 +694,7 @@ public class Xbox : IAsyncDisposable
 
         var line = await reader.ReadLineAsync() ?? throw new Exception("failed to read line");
 
-        Debug.WriteLine("Response: " + line);
+        Console.WriteLine("Response: " + line);
 
         return SplitStatusLine(line);
     }
@@ -715,7 +716,7 @@ public class Xbox : IAsyncDisposable
 
         var (status, data) = SplitStatusLine(line);
 
-        Debug.WriteLine("Response: " + line);
+        Console.WriteLine("Response: " + line);
 
         var lines = new List<string> { data };
 
@@ -728,7 +729,7 @@ public class Xbox : IAsyncDisposable
         {
             line = await reader.ReadLineAsync() ?? throw new Exception("failed to read line");
 
-            Debug.WriteLine("Response: " + line);
+            Console.WriteLine("Response: " + line);
 
             lines.Add(line);
         }

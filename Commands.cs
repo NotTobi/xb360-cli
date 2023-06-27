@@ -1,5 +1,3 @@
-using System.CommandLine.Invocation;
-
 namespace xb360;
 
 public static class Commands
@@ -76,7 +74,7 @@ public static class Commands
             await channel4.StopNotificationChannelAsync(port);
         }
 
-        await channel1.DisconnectAsync();
+        await channel1.DisconnectAsync(sendBye: false);
 
         return 0;
     }
