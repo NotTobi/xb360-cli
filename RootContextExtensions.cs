@@ -58,30 +58,33 @@ public static class RootContextExtensions
         context.RootCommand.AddCommand(dashboardCommand);
     }
 
-    public static void AddLoadPluginCommand(this RootContext context)
+    public static void AddModuleCommands(this RootContext context)
     {
-        var reloadCommand = new Command("load", "Loads a plugin");
+        var moduleCommand = new Command("module", "Manages modules");
 
-        var pluginPath = new Argument<string>("path", "The path of the plugin");
+        // LOAD
+        var loadCommand = new Command("load", "Loads a module");
 
-        reloadCommand.AddArgument(pluginPath);
+        var pluginPath = new Argument<string>("path", "The path to the module");
 
-        reloadCommand.SetHandler(Commands.LoadPluginAsync, context.HostOption, pluginPath);
+        loadCommand.AddArgument(pluginPath);
 
-        context.RootCommand.AddCommand(reloadCommand);
-    }
+        loadCommand.SetHandler(Commands.LoadPluginAsync, context.HostOption, pluginPath);
 
-    public static void AddUnloadPluginCommand(this RootContext context)
-    {
-        var reloadCommand = new Command("unload", "Unloads a plugin");
+        moduleCommand.AddCommand(loadCommand);
 
-        var pluginName = new Argument<string>("name", "The name of the loaded plugin");
+        // UNLOAD
+        var unloadCommand = new Command("unload", "Unloads a module");
 
-        reloadCommand.AddArgument(pluginName);
+        var pluginName = new Argument<string>("name", "The name of the loaded module");
 
-        reloadCommand.SetHandler(Commands.UnloadPluginAsync, context.HostOption, pluginName);
+        unloadCommand.AddArgument(pluginName);
 
-        context.RootCommand.AddCommand(reloadCommand);
+        unloadCommand.SetHandler(Commands.UnloadPluginAsync, context.HostOption, pluginName);
+
+        moduleCommand.AddCommand(unloadCommand);
+
+        context.RootCommand.AddCommand(moduleCommand);
     }
 
     public static void AddRestartCommand(this RootContext context)
@@ -115,5 +118,42 @@ public static class RootContextExtensions
         uploadCommand.SetHandler(Commands.UploadToConsoleAsync, context.HostOption, srcArgument, destArgument);
 
         context.RootCommand.AddCommand(uploadCommand);
+    }
+
+    // todo: --host shouldn't be on this
+    public static void AddConfigCommands(this RootContext context)
+    {
+        var configCommand = new Command("config", "Manages configuration options");
+
+        // LIST
+        var listCommand = new Command("list", "Lists all configured options");
+
+        listCommand.SetHandler(Commands.ListConfig);
+
+        configCommand.AddCommand(listCommand);
+
+        // SET
+        var setCommand = new Command("set", "Sets a configuration option");
+
+        var keyArgument = new Argument<string>("key");
+        keyArgument.FromAmong("host");
+
+        var valueArgument = new Argument<string>("value");
+
+        setCommand.AddArgument(keyArgument);
+        setCommand.AddArgument(valueArgument);
+
+        setCommand.SetHandler(Commands.SetConfig, keyArgument, valueArgument);
+
+        configCommand.AddCommand(setCommand);
+
+        // CLEAR
+        var clearCommand = new Command("clear", "Clears all configured options");
+
+        clearCommand.SetHandler(Commands.ClearConfig);
+
+        configCommand.AddCommand(clearCommand);
+
+        context.RootCommand.AddCommand(configCommand);
     }
 }

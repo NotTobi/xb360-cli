@@ -1,3 +1,5 @@
+using System.CommandLine.Invocation;
+
 namespace xb360;
 
 public static class Commands
@@ -149,5 +151,109 @@ public static class Commands
         await xbox.ConnectAsync(host);
 
         return xbox;
+    }
+
+    private static readonly string _configFile =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".xb360");
+
+    public static void SetConfig(string key, string value)
+    {
+        var lines = Array.Empty<string>();
+
+        if (File.Exists(_configFile))
+        {
+            try
+            {
+
+                lines = File.ReadAllLines(_configFile);
+            }
+            catch { }
+        }
+
+        var search = key + "=";
+        var newConfigLine = search + value;
+        var added = false;
+
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i];
+
+            if (line.StartsWith(search))
+            {
+                lines[i] = newConfigLine;
+                added = true;
+                break;
+            }
+        }
+
+        if (!added)
+        {
+            var length = lines.Length;
+
+            Array.Resize(ref lines, length + 1);
+
+            lines[length] = newConfigLine;
+        }
+
+        File.WriteAllLines(_configFile, lines);
+    }
+
+    public static void ListConfig()
+    {
+        if (!File.Exists(_configFile))
+        {
+            return;
+        }
+
+        try
+        {
+            var content = File.ReadAllText(_configFile).TrimEnd();
+
+            Console.WriteLine(content);
+        }
+        catch { }
+    }
+
+    public static void ClearConfig()
+    {
+        if (!File.Exists(_configFile))
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(_configFile);
+        }
+        catch { }
+    }
+
+    public static string GetConfigValueOrDefault(string key)
+    {
+        var lines = Array.Empty<string>();
+
+        if (File.Exists(_configFile))
+        {
+            try
+            {
+
+                lines = File.ReadAllLines(_configFile);
+            }
+            catch { }
+        }
+
+        var search = key + "=";
+
+        foreach (var line in lines)
+        {
+            if (!line.StartsWith(search))
+            {
+                continue;
+            }
+
+            return line[search.Length..];
+        }
+
+        return string.Empty;
     }
 }

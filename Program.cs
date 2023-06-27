@@ -1,11 +1,10 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Builder;
 using xb360;
 
 var rootCommand = new RootCommand("A xbdm based CLI to interact with your Xbox360 console");
 
-// todo: provide config command to persist this host option
 var hostOption = new Option<string>("--host", "The IP Address or hostname of the console");
+hostOption.SetDefaultValueFactory(() => Commands.GetConfigValueOrDefault("host"));
 
 rootCommand.AddGlobalOption(hostOption);
 
@@ -15,13 +14,15 @@ rootContext.AddInfoCommand();
 rootContext.AddLogsCommand();
 rootContext.AddLaunchCommand();
 rootContext.AddDashboardCommand();
-rootContext.AddLoadPluginCommand();
-rootContext.AddUnloadPluginCommand();
+rootContext.AddModuleCommands();
 rootContext.AddRestartCommand();
 rootContext.AddShutdownCommand();
 rootContext.AddUploadCommand();
+rootContext.AddConfigCommands();
 
 await rootCommand.InvokeAsync(args);
+
+// todo: handle exceptions properly
 
 // var builder = new CommandLineBuilder(rootCommand);
 

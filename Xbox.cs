@@ -50,6 +50,11 @@ public class Xbox : IAsyncDisposable
 
     public async Task ConnectAsync(string ipOrHostname)
     {
+        if (string.IsNullOrEmpty(ipOrHostname))
+        {
+            throw new Exception("Not IP address or hostname specified");
+        }
+
         if (!IPAddress.TryParse(ipOrHostname, out var ip))
         {
             try
@@ -65,7 +70,7 @@ public class Xbox : IAsyncDisposable
             }
             catch
             {
-                throw new Exception("Failed to resolve hostname");
+                throw new Exception("Failed to resolve hostname: " + ipOrHostname);
             }
         }
 
@@ -101,7 +106,7 @@ public class Xbox : IAsyncDisposable
         {
             await SendCommand("bye");
 
-            await ReadSingleLineAsync();
+            // await ReadSingleLineAsync();
         }
         catch (Exception exc)
         {
@@ -209,6 +214,11 @@ public class Xbox : IAsyncDisposable
         }
 
         var xboxPath = GetXboxPath(dest);
+
+        if (!File.Exists(src))
+        {
+            throw new Exception("File doesn't exist: " + src);
+        }
 
         var fileInfo = new FileInfo(src);
         var fileLength = fileInfo.Length;
