@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -87,7 +86,7 @@ public class Xbox : IAsyncDisposable
 
         await _client.ConnectAsync(ip, 730, cts.Token);
 
-        var (status, _) = await ReadSingleLineAsync();
+        var (status, _) = await ReadSingleLineAsync(cts.Token);
 
         if (status != 201)
         {
@@ -106,7 +105,7 @@ public class Xbox : IAsyncDisposable
         {
             if (sendBye)
             {
-                await SendCommand("bye");
+                await SendCommandAsync("bye");
             }
         }
         catch (Exception exc)
@@ -131,7 +130,7 @@ public class Xbox : IAsyncDisposable
 
     public async Task<string> GetCpuKeyAsync()
     {
-        await SendCommand("consolefeatures ver=2 type=10 params=\"A\\0\\A\\0\\\"");
+        await SendCommandAsync("consolefeatures ver=2 type=10 params=\"A\\0\\A\\0\\\"");
 
         var (_, data) = await ReadSingleLineAsync();
 
@@ -140,7 +139,7 @@ public class Xbox : IAsyncDisposable
 
     public async Task<string> GetKernelVersionAsync()
     {
-        await SendCommand("consolefeatures ver=2 type=13 params=\"A\\0\\A\\0\\\"");
+        await SendCommandAsync("consolefeatures ver=2 type=13 params=\"A\\0\\A\\0\\\"");
 
         var (_, data) = await ReadSingleLineAsync();
 
@@ -149,7 +148,7 @@ public class Xbox : IAsyncDisposable
 
     public async Task<string> GetConsoleTypeAsync()
     {
-        await SendCommand("consolefeatures ver=2 type=17 params=\"A\\0\\A\\0\\\"");
+        await SendCommandAsync("consolefeatures ver=2 type=17 params=\"A\\0\\A\\0\\\"");
 
         var (_, data) = await ReadSingleLineAsync();
 
@@ -158,24 +157,24 @@ public class Xbox : IAsyncDisposable
 
     public async Task BootToDashboardAsync()
     {
-        await SendCommand("magicboot");
+        await SendCommandAsync("magicboot");
     }
 
     public async Task RebootAsync()
     {
-        await SendCommand("magicboot  COLD");
+        await SendCommandAsync("magicboot  COLD");
     }
 
     public async Task ShutdownAsync()
     {
-        await SendCommand("consolefeatures ver=2 type=11 params=\"A\\0\\A\\0\\\"");
+        await SendCommandAsync("consolefeatures ver=2 type=11 params=\"A\\0\\A\\0\\\"");
     }
 
     private async Task<bool> FileExists(string path)
     {
         try
         {
-            await SendCommand($"getfileattributes name=\"{path}\"");
+            await SendCommandAsync($"getfileattributes name=\"{path}\"");
 
             await ReadMultipleLinesAsync();
 
@@ -199,12 +198,8 @@ public class Xbox : IAsyncDisposable
 
         var command = $"magicboot title=\"{xexPath}\" directory=\"{directoryPath}\"";
 
-        await SendCommand(command);
+        await SendCommandAsync(command);
     }
-
-    // todo: create status enum
-    const uint STATUS_READY_TO_ACCEPT_DATA = 204u;
-    const uint STATUS_OK = 200;
 
     // todo: handle directories
     public async Task UploadFileAsync(string src, string dest)
@@ -225,11 +220,11 @@ public class Xbox : IAsyncDisposable
         var fileLength = fileInfo.Length;
         var fileLengthHex = string.Format("{0:x}", fileLength);
 
-        await SendCommand($"sendfile name=\"{xboxPath}\" length=0x{fileLengthHex}");
+        await SendCommandAsync($"sendfile name=\"{xboxPath}\" length=0x{fileLengthHex}");
 
         var (status, _) = await ReadSingleLineAsync();
 
-        if (status != STATUS_READY_TO_ACCEPT_DATA)
+        if (status != (int)Status.READY_TO_ACCEPT_DATA)
         {
             throw new Exception("Wrong status");
         }
@@ -254,91 +249,20 @@ public class Xbox : IAsyncDisposable
         }
     }
 
-    public enum XNotiyLogo : int
-    {
-        XBOX_LOGO = 0,
-        NEW_MESSAGE_LOGO = 1,
-        FRIEND_REQUEST_LOGO = 2,
-        NEW_MESSAGE = 3,
-        FLASHING_XBOX_LOGO = 4,
-        GAMERTAG_SENT_YOU_A_MESSAGE = 5,
-        GAMERTAG_SINGED_OUT = 6,
-        GAMERTAG_SIGNEDIN = 7,
-        GAMERTAG_SIGNED_INTO_XBOX_LIVE = 8,
-        GAMERTAG_SIGNED_IN_OFFLINE = 9,
-        GAMERTAG_WANTS_TO_CHAT = 10,
-        DISCONNECTED_FROM_XBOX_LIVE = 11,
-        DOWNLOAD = 12,
-        FLASHING_MUSIC_SYMBOL = 13,
-        FLASHING_HAPPY_FACE = 14,
-        FLASHING_FROWNING_FACE = 15,
-        FLASHING_DOUBLE_SIDED_HAMMER = 16,
-        GAMERTAG_WANTS_TO_CHAT_2 = 17,
-        PLEASE_REINSERT_MEMORY_UNIT = 18,
-        PLEASE_RECONNECT_CONTROLLERM = 19,
-        GAMERTAG_HAS_JOINED_CHAT = 20,
-        GAMERTAG_HAS_LEFT_CHAT = 21,
-        GAME_INVITE_SENT = 22,
-        FLASH_LOGO = 23,
-        PAGE_SENT_TO = 24,
-        FOUR_2 = 25,
-        FOUR_3 = 26,
-        ACHIEVEMENT_UNLOCKED = 27,
-        FOUR_9 = 28,
-        GAMERTAG_WANTS_TO_TALK_IN_VIDEO_KINECT = 29,
-        VIDEO_CHAT_INVITE_SENT = 30,
-        READY_TO_PLAY = 31,
-        CANT_DOWNLOAD_X = 32,
-        DOWNLOAD_STOPPED_FOR_X = 33,
-        FLASHING_XBOX_CONSOLE = 34,
-        X_SENT_YOU_A_GAME_MESSAGE = 35,
-        DEVICE_FULL = 36,
-        FOUR_7 = 37,
-        FLASHING_CHAT_ICON = 38,
-        ACHIEVEMENTS_UNLOCKED = 39,
-        X_HAS_SENT_YOU_A_NUDGE = 40,
-        MESSENGER_DISCONNECTED = 41,
-        BLANK = 42,
-        CANT_SIGN_IN_MESSENGER = 43,
-        MISSED_MESSENGER_CONVERSATION = 44,
-        FAMILY_TIMER_X_TIME_REMAINING = 45,
-        DISCONNECTED_XBOX_LIVE_11_MINUTES_REMAINING = 46,
-        KINECT_HEALTH_EFFECTS = 47,
-        FOUR_5 = 48,
-        GAMERTAG_WANTS_YOU_TO_JOIN_AN_XBOX_LIVE_PARTY = 49,
-        PARTY_INVITE_SENT = 50,
-        GAME_INVITE_SENT_TO_XBOX_LIVE_PARTY = 51,
-        KICKED_FROM_XBOX_LIVE_PARTY = 52,
-        NULLED = 53,
-        DISCONNECTED_XBOX_LIVE_PARTY = 54,
-        DOWNLOADED = 55,
-        CANT_CONNECT_XBL_PARTY = 56,
-        GAMERTAG_HAS_JOINED_XBL_PARTY = 57,
-        GAMERTAG_HAS_LEFT_XBL_PARTY = 58,
-        GAMER_PICTURE_UNLOCKED = 59,
-        AVATAR_AWARD_UNLOCKED = 60,
-        JOINED_XBL_PARTY = 61,
-        PLEASE_REINSERT_USB_STORAGE_DEVICE = 62,
-        PLAYER_MUTED = 63,
-        PLAYER_UNMUTED = 64,
-        FLASHING_CHAT_SYMBOL = 65,
-        UPDATING = 76,
-    }
+    // private async Task XNotify(string text, XNotiyLogo logo = XNotiyLogo.FLASHING_XBOX_CONSOLE)
+    // {
+    //     var hexText = GetHexString(text);
+    //     var command =
+    //         $"consolefeatures ver=2 type=12 params=\"A\\0\\A\\2\\{String}/{text.Length}\\{hexText}\\{Int}\\{logo}\\\"";
 
-    public async Task XNotify(string text, XNotiyLogo logo = XNotiyLogo.FLASHING_XBOX_CONSOLE)
-    {
-        var hexText = GetHexString(text);
-        var command =
-            $"consolefeatures ver=2 type=12 params=\"A\\0\\A\\2\\{String}/{text.Length}\\{hexText}\\{Int}\\{logo}\\\"";
-
-        await SendCommand(command);
-    }
+    //     await SendCommandAsync(command);
+    // }
 
     public async Task StartNotificationChannelAsync(int port)
     {
         var command = $"notify reconnectport={port} reverse";
 
-        await SendCommand(command);
+        await SendCommandAsync(command);
 
         await ReadSingleLineAsync();
     }
@@ -347,7 +271,7 @@ public class Xbox : IAsyncDisposable
     {
         var command = $"notifyat port={port} drop";
 
-        await SendCommand(command);
+        await SendCommandAsync(command);
 
         await ReadSingleLineAsync();
     }
@@ -356,7 +280,7 @@ public class Xbox : IAsyncDisposable
     {
         var command = $"debugger connect port=0x{port:x8} override user=xb360-cli";
 
-        await SendCommand(command);
+        await SendCommandAsync(command);
 
         await ReadSingleLineAsync();
     }
@@ -365,7 +289,7 @@ public class Xbox : IAsyncDisposable
     {
         var command = $"debugger disconnect port=0x{port:x8}";
 
-        await SendCommand(command);
+        await SendCommandAsync(command);
 
         await ReadSingleLineAsync();
     }
@@ -435,11 +359,11 @@ public class Xbox : IAsyncDisposable
 
             var command = sb.ToString();
 
-            await SendCommand(command);
+            await SendCommandAsync(command);
 
             var (status, _) = await ReadSingleLineAsync();
 
-            if (status != STATUS_OK)
+            if (status != (int)Status.OK)
             {
                 throw new Exception("couldn't write memory block");
             }
@@ -506,7 +430,7 @@ public class Xbox : IAsyncDisposable
         _client!.SendTimeout = 4000000;
         _client!.ReceiveTimeout = 4000000;
 
-        await SendCommand(command);
+        await SendCommandAsync(command);
 
         var (_, data) = await ReadSingleLineAsync();
 
@@ -523,7 +447,7 @@ public class Xbox : IAsyncDisposable
 
             await ClearBufferAsync();
 
-            await SendCommand(subcommand);
+            await SendCommandAsync(subcommand);
 
             (_, data) = await ReadSingleLineAsync();
         }
@@ -540,7 +464,7 @@ public class Xbox : IAsyncDisposable
         var command =
             $"consolefeatures ver=2 type=9 params=\"A\\0\\A\\2\\{String}/{moduleName.Length}\\{moduleNameHex}\\{Int}\\{ordinal}\\\"";
 
-        await SendCommand(command);
+        await SendCommandAsync(command);
 
         var (_, data) = await ReadSingleLineAsync();
 
@@ -648,23 +572,26 @@ public class Xbox : IAsyncDisposable
 
     private const string EOL = "\r\n";
 
-    private async Task SendCommand(string command)
+    public async Task SendCommandAsync(string command, bool clearBuffer = true)
     {
         if (_client is null)
         {
             return;
         }
 
-        Console.WriteLine("Command: " + command);
+        if (clearBuffer)
+        {
+            await ClearBufferAsync();
+        }
+
+        LogDebug("Command: " + command);
 
         var bytes = Encoding.ASCII.GetBytes(command + EOL);
-
-        await ClearBufferAsync();
 
         await _client.Client.SendAsync(bytes);
     }
 
-    private async Task ClearBufferAsync()
+    public async Task ClearBufferAsync()
     {
         if (_client is null)
         {
@@ -681,7 +608,8 @@ public class Xbox : IAsyncDisposable
         }
     }
 
-    private async Task<(int Status, string Data)> ReadSingleLineAsync()
+    private async Task<(int Status, string Data)> ReadSingleLineAsync(
+        CancellationToken cancellationToken = default)
     {
         if (_client is null)
         {
@@ -692,14 +620,13 @@ public class Xbox : IAsyncDisposable
 
         using var reader = new StreamReader(stream, leaveOpen: true);
 
-        var line = await reader.ReadLineAsync() ?? throw new Exception("failed to read line");
+        var line = await reader.ReadLineAsync(cancellationToken)
+            ?? throw new Exception("failed to read line");
 
-        Console.WriteLine("Response: " + line);
+        LogDebug("Response: " + line);
 
         return SplitStatusLine(line);
     }
-
-    private const uint STATUS_MULTILINE_RESPONSE = 202;
 
     private async Task<(int Status, IReadOnlyList<string> Lines)> ReadMultipleLinesAsync()
     {
@@ -716,11 +643,11 @@ public class Xbox : IAsyncDisposable
 
         var (status, data) = SplitStatusLine(line);
 
-        Console.WriteLine("Response: " + line);
+        LogDebug("Response: " + line);
 
         var lines = new List<string> { data };
 
-        if (status != STATUS_MULTILINE_RESPONSE)
+        if (status != (int)Status.MULTILINE_RESPONSE)
         {
             return (status, lines);
         }
@@ -729,7 +656,7 @@ public class Xbox : IAsyncDisposable
         {
             line = await reader.ReadLineAsync() ?? throw new Exception("failed to read line");
 
-            Console.WriteLine("Response: " + line);
+            LogDebug("Response: " + line);
 
             lines.Add(line);
         }
@@ -761,5 +688,90 @@ public class Xbox : IAsyncDisposable
         }
 
         return path;
+    }
+
+    private static void LogDebug(string message)
+    {
+#if DEBUG
+        Console.WriteLine(message);
+#endif
+    }
+
+    private enum Status : int
+    {
+        OK = 200,
+        MULTILINE_RESPONSE = 202,
+        READY_TO_ACCEPT_DATA = 204,
+    }
+
+    private enum XNotiyLogo : int
+    {
+        XBOX_LOGO = 0,
+        NEW_MESSAGE_LOGO = 1,
+        FRIEND_REQUEST_LOGO = 2,
+        NEW_MESSAGE = 3,
+        FLASHING_XBOX_LOGO = 4,
+        GAMERTAG_SENT_YOU_A_MESSAGE = 5,
+        GAMERTAG_SINGED_OUT = 6,
+        GAMERTAG_SIGNEDIN = 7,
+        GAMERTAG_SIGNED_INTO_XBOX_LIVE = 8,
+        GAMERTAG_SIGNED_IN_OFFLINE = 9,
+        GAMERTAG_WANTS_TO_CHAT = 10,
+        DISCONNECTED_FROM_XBOX_LIVE = 11,
+        DOWNLOAD = 12,
+        FLASHING_MUSIC_SYMBOL = 13,
+        FLASHING_HAPPY_FACE = 14,
+        FLASHING_FROWNING_FACE = 15,
+        FLASHING_DOUBLE_SIDED_HAMMER = 16,
+        GAMERTAG_WANTS_TO_CHAT_2 = 17,
+        PLEASE_REINSERT_MEMORY_UNIT = 18,
+        PLEASE_RECONNECT_CONTROLLERM = 19,
+        GAMERTAG_HAS_JOINED_CHAT = 20,
+        GAMERTAG_HAS_LEFT_CHAT = 21,
+        GAME_INVITE_SENT = 22,
+        FLASH_LOGO = 23,
+        PAGE_SENT_TO = 24,
+        FOUR_2 = 25,
+        FOUR_3 = 26,
+        ACHIEVEMENT_UNLOCKED = 27,
+        FOUR_9 = 28,
+        GAMERTAG_WANTS_TO_TALK_IN_VIDEO_KINECT = 29,
+        VIDEO_CHAT_INVITE_SENT = 30,
+        READY_TO_PLAY = 31,
+        CANT_DOWNLOAD_X = 32,
+        DOWNLOAD_STOPPED_FOR_X = 33,
+        FLASHING_XBOX_CONSOLE = 34,
+        X_SENT_YOU_A_GAME_MESSAGE = 35,
+        DEVICE_FULL = 36,
+        FOUR_7 = 37,
+        FLASHING_CHAT_ICON = 38,
+        ACHIEVEMENTS_UNLOCKED = 39,
+        X_HAS_SENT_YOU_A_NUDGE = 40,
+        MESSENGER_DISCONNECTED = 41,
+        BLANK = 42,
+        CANT_SIGN_IN_MESSENGER = 43,
+        MISSED_MESSENGER_CONVERSATION = 44,
+        FAMILY_TIMER_X_TIME_REMAINING = 45,
+        DISCONNECTED_XBOX_LIVE_11_MINUTES_REMAINING = 46,
+        KINECT_HEALTH_EFFECTS = 47,
+        FOUR_5 = 48,
+        GAMERTAG_WANTS_YOU_TO_JOIN_AN_XBOX_LIVE_PARTY = 49,
+        PARTY_INVITE_SENT = 50,
+        GAME_INVITE_SENT_TO_XBOX_LIVE_PARTY = 51,
+        KICKED_FROM_XBOX_LIVE_PARTY = 52,
+        NULLED = 53,
+        DISCONNECTED_XBOX_LIVE_PARTY = 54,
+        DOWNLOADED = 55,
+        CANT_CONNECT_XBL_PARTY = 56,
+        GAMERTAG_HAS_JOINED_XBL_PARTY = 57,
+        GAMERTAG_HAS_LEFT_XBL_PARTY = 58,
+        GAMER_PICTURE_UNLOCKED = 59,
+        AVATAR_AWARD_UNLOCKED = 60,
+        JOINED_XBL_PARTY = 61,
+        PLEASE_REINSERT_USB_STORAGE_DEVICE = 62,
+        PLAYER_MUTED = 63,
+        PLAYER_UNMUTED = 64,
+        FLASHING_CHAT_SYMBOL = 65,
+        UPDATING = 76,
     }
 }

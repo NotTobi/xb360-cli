@@ -19,68 +19,143 @@ public static class Commands
         return 0;
     }
 
-    // todo: handle reconnecting (what is reconnect port for?)
-    // todo: handle ctrl c interruption
     public static async Task<int> PollLogsAsync(string host, int reconnectDelay, CancellationToken cancellationToken)
     {
-        var channel1 = await GetXboxAsync(host);
+        WriteLogInfo($"Attempting to connect to \"{host}\"...");
 
-        var port = channel1.SourcePort;
+        var hadConnection = false;
+        Xbox? notificationChannel = null;
 
-        await channel1.StartNotificationChannelAsync(port);
+        _ = Task.Run(async () =>
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    if (notificationChannel is null)
+                    {
+                        continue;
+                    }
 
-        await using (var channel2 = await GetXboxAsync(host))
-        {
-            await channel2.StartDebuggerAsync(port);
-        }
+                    try
+                    {
+                        await notificationChannel.SendCommandAsync(string.Empty, clearBuffer: false);
+                    }
+                    catch
+                    {
+                        ReportDisconnect();
+                    }
 
-        var stream = channel1.NetworkStream;
-
-        var sr = new StreamReader(stream);
-
-        Console.WriteLine("Waiting for log messages...");
+                    await Task.Delay(1000, cancellationToken);
+                }
+            }, cancellationToken);
 
         while (!cancellationToken.IsCancellationRequested)
         {
+            if (hadConnection)
+            {
+                await Task.Delay(reconnectDelay, cancellationToken);
+            }
+
             try
             {
-                var line = await sr.ReadLineAsync(cancellationToken);
+                var newChannel = await GetXboxAsync(host);
+                var port = newChannel.SourcePort;
 
-                if (string.IsNullOrEmpty(line) || !line.StartsWith("debugstr"))
+                await newChannel.StartNotificationChannelAsync(port);
+
+                await using (var channel2 = await GetXboxAsync(host))
                 {
-                    continue;
+                    await channel2.StartDebuggerAsync(port);
                 }
 
-                var marker = "string=";
+                notificationChannel = newChannel;
+                hadConnection = true;
 
-                var index = line.IndexOf(marker);
-                var message = line[(index + marker.Length)..];
-
-                Console.WriteLine(message);
+                WriteLogInfo($"Connected to \"{host}\". Waiting for log messages...");
             }
-            catch (OperationCanceledException)
+            catch
             {
-                break;
+                continue;
             }
-            catch (Exception exc)
+
+            var stream = notificationChannel.NetworkStream;
+
+            var sr = new StreamReader(stream);
+
+            while (notificationChannel is not null && !cancellationToken.IsCancellationRequested)
             {
-                Console.WriteLine("Something went wrong: " + exc.Message);
+                try
+                {
+                    var line = await sr.ReadLineAsync(cancellationToken);
+
+                    if (string.IsNullOrEmpty(line))
+                    {
+                        continue;
+                    }
+
+                    if (line.Equals("execution rebooting"))
+                    {
+                        ReportDisconnect();
+                        continue;
+                    }
+
+                    // todo: also print crash info
+                    if (!line.StartsWith("debugstr"))
+                    {
+                        Console.WriteLine(line);
+
+                        continue;
+                    }
+
+                    var marker = "string=";
+
+                    var index = line.IndexOf(marker);
+                    var message = line[(index + marker.Length)..];
+
+                    WriteLogMessage(message);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch
+                {
+                    ReportDisconnect();
+                }
             }
         }
 
-        await using (var channel3 = await GetXboxAsync(host))
+        if (notificationChannel is not null)
         {
-            await channel3.StopDebuggerAsync(port);
-        }
+            var port = notificationChannel.SourcePort;
 
-        await using (var channel4 = await GetXboxAsync(host))
-        {
-            await channel4.StopNotificationChannelAsync(port);
-        }
+            await using (var channel3 = await GetXboxAsync(host))
+            {
+                await channel3.StopDebuggerAsync(port);
+            }
 
-        await channel1.DisconnectAsync(sendBye: false);
+            await using (var channel4 = await GetXboxAsync(host))
+            {
+                await channel4.StopNotificationChannelAsync(port);
+            }
+
+            await notificationChannel.DisconnectAsync(sendBye: false);
+        }
 
         return 0;
+
+        void ReportDisconnect()
+        {
+            if (notificationChannel is null)
+            {
+                return;
+            }
+
+            WriteLogInfo($"Lost connection to \"{host}\"");
+
+            notificationChannel = null;
+
+            WriteLogInfo($"Attempting to re-connect to \"{host}\"...");
+        }
     }
 
     public static async Task<int> LaunchExecutableAsync(string host, string executablePath)
@@ -257,5 +332,21 @@ public static class Commands
         }
 
         return string.Empty;
+    }
+
+    private static void WriteLogInfo(string message)
+    {
+        var previousColor = Console.ForegroundColor;
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+
+        Console.WriteLine(message);
+
+        Console.ForegroundColor = previousColor;
+    }
+
+    private static void WriteLogMessage(string message)
+    {
+        Console.WriteLine(message);
     }
 }
