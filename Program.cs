@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Builder;
 using xb360;
 
 var rootCommand = new RootCommand("A xbdm based CLI to interact with your Xbox360 console");
@@ -20,17 +21,5 @@ rootContext.AddShutdownCommand();
 rootContext.AddUploadCommand();
 rootContext.AddConfigCommands();
 
-await rootCommand.InvokeAsync(args);
-
 // todo: handle exceptions properly
-
-// var builder = new CommandLineBuilder(rootCommand);
-
-// builder
-//     .UseDefaults()
-//     .UseExceptionHandler((exception, context) =>
-//     {
-//         Console.WriteLine(exception.Message);
-//     }, errorExitCode: 1);
-
-// await builder.Command.InvokeAsync(args);
+await rootCommand.InvokeAsync(args);

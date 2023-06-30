@@ -1,3 +1,5 @@
+using System.Net.Sockets;
+
 namespace xb360;
 
 public static class Commands
@@ -35,6 +37,8 @@ public static class Commands
         var stream = channel1.NetworkStream;
 
         var sr = new StreamReader(stream);
+
+        Console.WriteLine("Waiting for log messages...");
 
         while (!cancellationToken.IsCancellationRequested)
         {
