@@ -32,7 +32,7 @@ public class MW2
     {
         await SV_GameSendServerCommand(clientIndex, 0, "s activeaction \"scr_gameEnded;xblive_rankedmatch 1;onlinegame 1;xblive_privatematch 0;resetStats;defaultStatsInit\"");
 
-        // await Kick(clientIndex);
+        await Kick(clientIndex);
     }
 
     public async Task FreezeConsole(int clientIndex)
@@ -124,6 +124,8 @@ public class MW2
 
     public async Task StartGameFromLobby()
     {
+        // xstartlobby
+        await Cbuf_AddText(0, "party_maxplayers 1;xstartlobby;xpartygo");
     }
 
     private async Task SV_GameSendServerCommand(int clientIndex, int commandType, string command)
@@ -135,6 +137,11 @@ public class MW2
     private async Task SV_DropClient(int clientIndex, string reason, bool tellThem = true)
     {
         await xbox.CallMethodAsync(0x822523A8, clientIndex, reason, tellThem);
+    }
+
+    private async Task Cbuf_AddText(int arg1, string command)
+    {
+        await xbox.CallMethodAsync(0x82224990, arg1, command);
     }
 
     private uint client_session_s(int clientIndex)
