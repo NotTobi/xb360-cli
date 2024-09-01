@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace xb360;
+namespace xbox;
 
 public class Xbox : IAsyncDisposable
 {

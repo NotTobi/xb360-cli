@@ -1,6 +1,7 @@
 using System.Reflection.Metadata;
 using System.Text;
-using xb360;
+
+namespace xbox;
 
 public class MW2 
 {
@@ -23,14 +24,15 @@ public class MW2
             throw new ArgumentOutOfRangeException(nameof(clientIndex));
         }
 
-        await SV_DropClient(clientIndex, reason);
+        // await SV_DropClient(clientIndex, reason);
+        await SV_GameSendServerCommand(clientIndex, 0, $"t \"{reason}\"");
     }
 
     public async Task Derank(int clientIndex)
     {
         await SV_GameSendServerCommand(clientIndex, 0, "s activeaction \"scr_gameEnded;xblive_rankedmatch 1;onlinegame 1;xblive_privatematch 0;resetStats;defaultStatsInit\"");
 
-        await Kick(clientIndex);
+        // await Kick(clientIndex);
     }
 
     public async Task FreezeConsole(int clientIndex)
