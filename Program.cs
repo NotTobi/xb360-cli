@@ -1,5 +1,4 @@
-﻿using System.CommandLine;
-using System.CommandLine.Builder;
+using System.CommandLine;
 using xb360;
 
 var rootCommand = new RootCommand("A xbdm based CLI to interact with your Xbox360 console");

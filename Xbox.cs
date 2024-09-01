@@ -110,7 +110,7 @@ public class Xbox : IAsyncDisposable
         }
         catch (Exception exc)
         {
-            Console.WriteLine("failed to bye: " + exc.Message);
+            LogDebug("failed to bye: " + exc.Message);
         }
 
         try
@@ -176,7 +176,12 @@ public class Xbox : IAsyncDisposable
         {
             await SendCommandAsync($"getfileattributes name=\"{path}\"");
 
-            await ReadMultipleLinesAsync();
+            var (status, _) = await ReadSingleLineAsync();
+
+            if (status == 402)
+            {
+                return false;
+            }
 
             return true;
         }
@@ -189,7 +194,7 @@ public class Xbox : IAsyncDisposable
     public async Task LaunchXexAsync(string path)
     {
         var xexPath = GetXboxPath(path);
-        var directoryPath = Path.GetDirectoryName(xexPath);
+        var directoryPath = GetDOSDirectoryName(xexPath);
 
         if (!await FileExists(xexPath))
         {
@@ -303,7 +308,12 @@ public class Xbox : IAsyncDisposable
             throw new Exception($"File \"{xboxPath}\" doesn't exist");
         }
 
-        var moduleName = Path.GetFileName(xboxPath);
+        var moduleName = GetDOSFileName(xboxPath);
+
+        if (string.IsNullOrEmpty(moduleName))
+        {
+            throw new Exception("Invalid module path");
+        }
 
         var moduleHandle = await GetModuleHandleAsync(moduleName);
 
@@ -326,7 +336,7 @@ public class Xbox : IAsyncDisposable
             throw new Exception($"Module \"{moduleName}\" isn't loaded");
         }
 
-        await SetMemory(moduleHandle + 64, new byte[] { 0, 1 });
+        await SetMemoryAsync(moduleHandle + 64, new byte[] { 0, 1 });
 
         var xexUnloadImageAddress = await GetFunctionAddressAsync("xboxkrnl.exe", 417);
 
@@ -340,7 +350,30 @@ public class Xbox : IAsyncDisposable
         return await CallMethodAsync<uint>(xexGetModuleHandleAddress, moduleName);
     }
 
-    private async Task SetMemory(uint address, byte[] data)
+    public async Task<T> GetMemoryAsync<T>(uint address, uint size)
+    {
+        var bytes = await ReadMemoryAsync(address, size);
+
+        if (typeof(T) == typeof(string))
+        {
+            return (T)(object)Encoding.UTF8.GetString(bytes);
+        }
+        else 
+        {
+            throw new InvalidOperationException("Invalid type");
+        }
+    }
+
+    private async Task<byte[]> ReadMemoryAsync(uint address, uint size)
+    {
+        await SendCommandAsync($"getmem addr={address} length={size}");
+
+        var (_, lines) = await ReadMultipleLinesAsync();
+
+        return Convert.FromHexString(lines[1]);
+    }
+
+    public async Task SetMemoryAsync(uint address, byte[] data)
     {
         var length = data.Length;
         var offset = 0;
@@ -374,11 +407,35 @@ public class Xbox : IAsyncDisposable
         }
     }
 
-    private async Task<T> CallMethodAsync<T>(uint address, params object[] arguments)
+    public async Task CallMethodAsync(uint address, params object[] arguments)
+    {
+        await CallMethodAsync(address, typeof(void), arguments);
+    }
+
+    public async Task<T> CallMethodAsync<T>(uint address, params object[] arguments)
     {
         var result = await CallMethodAsync(address, typeof(T), arguments);
 
         return (T)result;
+    }
+
+    public async Task SendCommandAsync(string command, bool clearBuffer = true)
+    {
+        if (_client is null)
+        {
+            return;
+        }
+
+        if (clearBuffer)
+        {
+            await ClearBufferAsync();
+        }
+
+        LogDebug("Command: " + command);
+
+        var bytes = Encoding.ASCII.GetBytes(command + EOL);
+
+        await _client.Client.SendAsync(bytes);
     }
 
     private async Task<object> CallMethodAsync(uint address, Type type, params object[] arguments)
@@ -427,35 +484,42 @@ public class Xbox : IAsyncDisposable
 
         var command = sb.ToString();
 
-        _client!.SendTimeout = 4000000;
-        _client!.ReceiveTimeout = 4000000;
+        IncreaseClientTimeouts();
 
         await SendCommandAsync(command);
 
-        var (_, data) = await ReadSingleLineAsync();
-
-        var bufferAddressMarker = "buf_addr=";
-
-        while (data.Contains(bufferAddressMarker))
+        if (type != typeof(void))
         {
-            await Task.Delay(250);
+            var (_, data) = await ReadSingleLineAsync();
 
-            var afterMarker = data.IndexOf(bufferAddressMarker) + bufferAddressMarker.Length;
-            var bufferAddress = data[afterMarker..];
+            var bufferAddressMarker = "buf_addr=";
 
-            var subcommand = $"consolefeatures {bufferAddressMarker}0x{bufferAddress}";
+            while (data.Contains(bufferAddressMarker))
+            {
+                await Task.Delay(250);
 
-            await ClearBufferAsync();
+                var afterMarker = data.IndexOf(bufferAddressMarker) + bufferAddressMarker.Length;
+                var bufferAddress = data[afterMarker..];
 
-            await SendCommandAsync(subcommand);
+                var subcommand = $"consolefeatures {bufferAddressMarker}0x{bufferAddress}";
 
-            (_, data) = await ReadSingleLineAsync();
+                await ClearBufferAsync();
+
+                await SendCommandAsync(subcommand);
+
+                (_, data) = await ReadSingleLineAsync();
+            }
+
+            ResetClientTimeouts();
+
+            return CoerceResult(data, type);
         }
+        else 
+        {
+            ResetClientTimeouts();
 
-        _client!.SendTimeout = 5000;
-        _client!.ReceiveTimeout = 2000;
-
-        return CoerceResult(data, type);
+            return 0;
+        }
     }
 
     private async Task<uint> GetFunctionAddressAsync(string moduleName, int ordinal)
@@ -572,26 +636,7 @@ public class Xbox : IAsyncDisposable
 
     private const string EOL = "\r\n";
 
-    public async Task SendCommandAsync(string command, bool clearBuffer = true)
-    {
-        if (_client is null)
-        {
-            return;
-        }
-
-        if (clearBuffer)
-        {
-            await ClearBufferAsync();
-        }
-
-        LogDebug("Command: " + command);
-
-        var bytes = Encoding.ASCII.GetBytes(command + EOL);
-
-        await _client.Client.SendAsync(bytes);
-    }
-
-    public async Task ClearBufferAsync()
+    private async Task ClearBufferAsync()
     {
         if (_client is null)
         {
@@ -600,8 +645,11 @@ public class Xbox : IAsyncDisposable
 
         var stream = _client.GetStream();
 
+        LogDebug("Clearing buffer...");
+
         while (stream.DataAvailable)
         {
+            LogDebug("Stream has data - reading...");
             var buffer = new byte[256];
 
             await stream.ReadAsync(buffer);
@@ -635,6 +683,8 @@ public class Xbox : IAsyncDisposable
             throw new Exception("client is null");
         }
 
+        IncreaseClientTimeouts();
+
         var stream = _client.GetStream();
 
         using var reader = new StreamReader(stream, leaveOpen: true);
@@ -649,17 +699,31 @@ public class Xbox : IAsyncDisposable
 
         if (status != (int)Status.MULTILINE_RESPONSE)
         {
+            ResetClientTimeouts();
             return (status, lines);
         }
 
-        while (stream.DataAvailable)
-        {
+        do {
             line = await reader.ReadLineAsync() ?? throw new Exception("failed to read line");
 
-            LogDebug("Response: " + line);
+            if (line is null) 
+            {
+                break;
+            }
+
+            LogDebug("Sub Response: " + line);
+
+            if (line == ".") 
+            {
+                LogDebug("End of response");
+                break;
+            }
 
             lines.Add(line);
         }
+        while (true);
+
+        ResetClientTimeouts();
 
         return (status, lines);
     }
@@ -695,6 +759,30 @@ public class Xbox : IAsyncDisposable
 #if DEBUG
         Console.WriteLine(message);
 #endif
+    }
+
+    private static string? GetDOSFileName(string path)
+    {
+        var lastSlash = path.LastIndexOf('\\');
+
+        if (lastSlash < 0)
+        {
+            return path;
+        }
+
+        return path[(lastSlash + 1)..];
+    }
+
+    private static string? GetDOSDirectoryName(string path)
+    {
+        var lastSlash = path.LastIndexOf('\\');
+
+        if (lastSlash < 0)
+        {
+            return null;
+        }
+
+        return path[..lastSlash];
     }
 
     private enum Status : int
@@ -773,5 +861,17 @@ public class Xbox : IAsyncDisposable
         PLAYER_UNMUTED = 64,
         FLASHING_CHAT_SYMBOL = 65,
         UPDATING = 76,
+    }
+
+    private void IncreaseClientTimeouts()
+    {
+        _client!.SendTimeout = 4000000;
+        _client!.ReceiveTimeout = 4000000;
+    }
+
+    private void ResetClientTimeouts()
+    {
+        _client!.SendTimeout = 5000;
+        _client!.ReceiveTimeout = 2000;
     }
 }
