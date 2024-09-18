@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "xb360", "cli\xb360.csproj", "{A68E1E07-A5FA-4EA5-8D99-4BA542648E3E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "xb360-cli", "cli\xb360-cli.csproj", "{A68E1E07-A5FA-4EA5-8D99-4BA542648E3E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "xbox-lib", "xbox-lib\xbox-lib.csproj", "{A63C3E14-0F65-4452-8493-9FF5D0080ED4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "app", "app\app.csproj", "{EFC738EF-D377-4069-AEBB-1C08B0D00077}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "xb360", "app\xb360.csproj", "{EFC738EF-D377-4069-AEBB-1C08B0D00077}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
