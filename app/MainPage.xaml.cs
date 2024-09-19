@@ -148,6 +148,7 @@ public partial class MainPage : ContentPage
 		DerankBtn.IsEnabled = false;
 		FreezeConsoleBtn.IsEnabled = false;
 		FreezeClassesBtn.IsEnabled = false;
+		StartGameBtn.IsEnabled = false;
 	}
 
 	private void EnableMw2UiElements() {
@@ -157,6 +158,7 @@ public partial class MainPage : ContentPage
 		DerankBtn.IsEnabled = true;
 		FreezeConsoleBtn.IsEnabled = true;
 		FreezeClassesBtn.IsEnabled = true;
+		StartGameBtn.IsEnabled = true;
 	}
 
 	public ObservableCollection<Client> Clients { get; } = new();

@@ -124,8 +124,8 @@ public class MW2
 
     public async Task StartGameFromLobby()
     {
-        // xstartlobby
-        await Cbuf_AddText(0, "party_maxplayers 1;xstartlobby;xpartygo");
+        await Cbuf_AddText(0, "set party_connectToOthers 0;party_minplayers 1;party_minLobbyTime 1;party_pregameTimer 1;party_gameStartTimerLength 1;party_pregameStartTimerLength 1;party_minLobbyTime 1;party_timer 1");
+        await Cbuf_AddText(0, "xpartygo");
     }
 
     private async Task SV_GameSendServerCommand(int clientIndex, int commandType, string command)
