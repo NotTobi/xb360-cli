@@ -68,6 +68,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
@@ -127,6 +128,13 @@
                 x:Name="FreezeClassesBtn"
                 Text="Freeze Classes"
                 Clicked="FreezeClassesClicked"/>
+
+            <Button
+                Grid.Row="5"
+                Grid.Column="0"
+                x:Name="LowHealthBtn"
+                Text="Low Health"
+                Clicked="LowHealthClicked"/>
         </Grid>
     </Grid>
 

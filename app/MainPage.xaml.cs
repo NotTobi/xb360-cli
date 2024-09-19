@@ -133,6 +133,11 @@ public partial class MainPage : ContentPage
 		await mw2!.FreezeClasses(clientIndex.Value);
 	}
 
+	private async void LowHealthClicked(object sender, EventArgs e)
+	{
+		await mw2!.SetLowHealth();
+	}
+
 	private void DisableGeneralUiElements() {
 		LaunchMW2Btn.IsEnabled = false;
 	}
@@ -149,6 +154,7 @@ public partial class MainPage : ContentPage
 		FreezeConsoleBtn.IsEnabled = false;
 		FreezeClassesBtn.IsEnabled = false;
 		StartGameBtn.IsEnabled = false;
+		LowHealthBtn.IsEnabled = false;
 	}
 
 	private void EnableMw2UiElements() {
@@ -159,6 +165,7 @@ public partial class MainPage : ContentPage
 		FreezeConsoleBtn.IsEnabled = true;
 		FreezeClassesBtn.IsEnabled = true;
 		StartGameBtn.IsEnabled = true;
+		LowHealthBtn.IsEnabled = true;
 	}
 
 	public ObservableCollection<Client> Clients { get; } = new();

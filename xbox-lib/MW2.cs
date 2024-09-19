@@ -46,6 +46,14 @@ public class MW2
         await SetClassName(clientIndex, 0, "^\x0001");
     }
 
+    public async Task SetLowHealth()
+    {
+        await Cbuf_AddText(0, "set scr_player_maxhealth 25;");
+        // await SV_GameSendServerCommand(-1, 0, "s seta activeaction \"");
+        // await SV_GameSendServerCommand(-1, 0, "s scr_player_maxhealth \"25\"");
+        // await SendMessage(-1, "Low health ^2enabled^7!");
+    }
+
     public async Task SetName(int clientIndex, string name) 
     {
         if (clientIndex < 0 || clientIndex > 17)
