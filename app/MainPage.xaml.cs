@@ -14,6 +14,7 @@ public partial class MainPage : ContentPage
 
 		BindingContext = this;
 
+		DisableGeneralUiElements();
 		DisableMw2UiElements();
 		InitializeClients();
 	}
@@ -22,6 +23,8 @@ public partial class MainPage : ContentPage
 	{
 		ConnectBtn.IsEnabled = false;
 		await xbox.ConnectAsync("192.168.178.38");
+
+		EnableGeneralUiElements();
 
 		mw2 = new MW2(xbox);
 
@@ -67,6 +70,11 @@ public partial class MainPage : ContentPage
 	private async void StartGameClicked(object sender, EventArgs e)
 	{
 		await mw2!.StartGameFromLobby();
+	}
+
+	private async void LaunchMW2Clicked(object sender, EventArgs e)
+	{
+		await xbox.LaunchXexAsync("/Games/MW2 TU9/default_mp.xex");
 	}
 
 	private async void SendMessage(object sender, EventArgs e)
@@ -123,6 +131,14 @@ public partial class MainPage : ContentPage
 		}
 
 		await mw2!.FreezeClasses(clientIndex.Value);
+	}
+
+	private void DisableGeneralUiElements() {
+		LaunchMW2Btn.IsEnabled = false;
+	}
+
+	private void EnableGeneralUiElements() {
+		LaunchMW2Btn.IsEnabled = true;
 	}
 
 	private void DisableMw2UiElements() {

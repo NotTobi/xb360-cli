@@ -88,6 +88,13 @@
                 Text="Start game"
                 Clicked="StartGameClicked"/>
 
+            <Button
+                Grid.Row="1"
+                Grid.Column="1"
+                x:Name="LaunchMW2Btn"
+                Text="Launch MW2"
+                Clicked="LaunchMW2Clicked"/>
+
             <Entry
                 Grid.Row="2"
                 Grid.ColumnSpan="2"
