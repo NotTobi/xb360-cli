@@ -43,7 +43,16 @@ public class MW2
 
     public async Task FreezeClasses(int clientIndex)
     {
-        await SetClassName(clientIndex, 0, "^\x0001");
+        // 2064 ^1<3^7
+        // await SetClassName(clientIndex, 0, "^\x0001");
+        
+        var className = "^\x0001";
+        var paddedClassName = className.PadRight(20, '\0');
+        var classIndex = 0;
+        var classValue = 3003 /* custom classes */ + (classIndex * 64 /* size of class */) + 37 /* name */;
+        var hexClassName = Convert.ToHexString(Encoding.ASCII.GetBytes(paddedClassName)).ToUpper();
+
+        await SV_GameSendServerCommand(clientIndex, 1, $"J {classValue} {hexClassName}00 2064 ^1<3^7");
     }
 
     public async Task SetLowHealth()
@@ -84,10 +93,12 @@ public class MW2
             throw new ArgumentOutOfRangeException(nameof(className), "Class name must be 20 characters or less.");
         }
 
-        var classValue = 3003 /* custom classes */ + (classIndex * 64 /* size of class */) + 37 /* name */;
-        var hexClassName = Convert.ToHexString(Encoding.ASCII.GetBytes(className)).ToUpper();
+        var paddedClassName = className.PadRight(20, '\0');
 
-        await SV_GameSendServerCommand(clientIndex, 1, $"J {classValue} {hexClassName}");
+        var classValue = 3003 /* custom classes */ + (classIndex * 64 /* size of class */) + 37 /* name */;
+        var hexClassName = Convert.ToHexString(Encoding.ASCII.GetBytes(paddedClassName)).ToUpper();
+
+        await SV_GameSendServerCommand(clientIndex, 0, $"J {classValue} {hexClassName}");
     }
 
     public async Task SetPregameName(string name) 
@@ -132,7 +143,7 @@ public class MW2
 
     public async Task StartGameFromLobby()
     {
-        await Cbuf_AddText(0, "set party_connectToOthers 0;party_minplayers 1;party_minLobbyTime 1;party_pregameTimer 1;party_gameStartTimerLength 1;party_pregameStartTimerLength 1;party_minLobbyTime 1;party_timer 1");
+        await Cbuf_AddText(0, "set party_connectToOthers 0;party_minplayers 1;party_minLobbyTime 1;party_pregameTimer 1;party_gameStartTimerLength 1;party_pregameStartTimerLength 1;party_minLobbyTime 1;party_timer 1;scr_intermissiontime 1");
         await Cbuf_AddText(0, "xpartygo");
     }
 
