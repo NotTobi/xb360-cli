@@ -138,6 +138,14 @@ public partial class MainPage : ContentPage
 		await mw2!.SetLowHealth();
 	}
 
+	private async void BotsWarningClicked(object sender, EventArgs e)
+	{
+		await mw2!.SendMessage(-1, "^5Kill Bots^7 = ^1Kick");
+		await Task.Delay(2000);
+		var hostname = !string.IsNullOrEmpty(NameEntry.Text) ? NameEntry.Text : "me";
+		await mw2!.SendMessage(-1, $"Msg ^2{hostname}^7 for ^5unlock all^7 or ^5last");
+	}
+
 	private void DisableGeneralUiElements() {
 		LaunchMW2Btn.IsEnabled = false;
 	}
@@ -155,6 +163,7 @@ public partial class MainPage : ContentPage
 		FreezeClassesBtn.IsEnabled = false;
 		StartGameBtn.IsEnabled = false;
 		LowHealthBtn.IsEnabled = false;
+		BotsWarningBtn.IsEnabled = false;
 	}
 
 	private void EnableMw2UiElements() {
@@ -166,6 +175,7 @@ public partial class MainPage : ContentPage
 		FreezeClassesBtn.IsEnabled = true;
 		StartGameBtn.IsEnabled = true;
 		LowHealthBtn.IsEnabled = true;
+		BotsWarningBtn.IsEnabled = true;
 	}
 
 	public ObservableCollection<Client> Clients { get; } = new();

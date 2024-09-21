@@ -135,6 +135,13 @@
                 x:Name="LowHealthBtn"
                 Text="Low Health"
                 Clicked="LowHealthClicked"/>
+
+            <Button
+                Grid.Row="5"
+                Grid.Column="1"
+                x:Name="BotsWarningBtn"
+                Text="Send Warning"
+                Clicked="BotsWarningClicked"/>
         </Grid>
     </Grid>
 
