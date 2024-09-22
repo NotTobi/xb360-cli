@@ -21,16 +21,11 @@ public partial class MainPage : ContentPage
 
 	private async void ConnectClicked(object sender, EventArgs e)
 	{
-		ConnectBtn.IsEnabled = false;
 		await xbox.ConnectAsync("192.168.178.38");
 
 		EnableGeneralUiElements();
 
 		mw2 = new MW2(xbox);
-
-		// If game is mw2, do
-
-		await RefreshClients();
 
 		EnableMw2UiElements();
 	}
