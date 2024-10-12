@@ -21,7 +21,7 @@ public partial class MainPage : ContentPage
 
 	private async void ConnectClicked(object sender, EventArgs e)
 	{
-		await xbox.ConnectAsync("192.168.178.38");
+		await xbox.ConnectAsync("192.168.178.30");
 
 		EnableGeneralUiElements();
 
