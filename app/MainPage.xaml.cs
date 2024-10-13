@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using xbox;
 
-namespace app;
+namespace app2;
 
 public partial class MainPage : ContentPage
 {
